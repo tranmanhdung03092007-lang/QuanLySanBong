@@ -1,0 +1,171 @@
+PHAN 4 - NGUOI 4: ADMIN + DICH VU + CRONJOB
+
+=== MUC 1: CAC CAU HOI CO BAN ===
+
+CAU 1: Nguoi 4 phụ trách những gì?
+Tra loi: Trang Admin Dashboard, CRUD Dich vu, CronJob tu dong chay.
+
+CAU 2: CronJob làm gì?
+Tra loi: 
+- Huy hoa don qua han thanh toan
+- Dat trang thai "HẾT" cho ca trong đã qua giờ
+
+CAU 3: CronJob chạy như thế nào?
+Tra loi:
+- Tomcat khoi dong → contextInitialized() duoc goi
+- Tao ScheduledExecutorService
+- Len lịch chay moi gio 1 lan (phut 0)
+- Moi lan chay: goi repo.expire() và repo.expireSlots()
+
+CAU 4: Tại sao dùng ScheduledExecutorService?
+Tra loi: 
+- Không cần thư viện ngoài (Quartz, Spring...)
+- Java Standard Library có sẵn
+- Đơn giản, dễ hiểu
+
+CAU 5: ExpiryListener là gì?
+Tra loi: La @WebListener chay khi Tomcat khoi dong. 
+         Tao va quan ly ScheduledExecutorService de chay CronJob.
+
+=== MUC 2: DATABASE & CODE ===
+
+CAU 6: Bảng DichVu lưu gì?
+Tra loi: ma_dv (PK), ten_dv, don_gia.
+
+CAU 7: Bảng LichSan có những trạng thái nào?
+Tra loi:
+- CÒN TRỐNG - ca trong
+- ĐANG GIỮ CHỖ - cho thanh toan coc
+- ĐÃ ĐẶT - da thanh toan
+- SỰ KIỆN - dat su kien
+- HẾT - da qua gio (do CronJob set)
+
+CAU 8: AdminServlet làm gì?
+Tra loi: Hien thi Dashboard voi thong ke va menu quan ly.
+
+CAU 9: AdminCrudServlet làm gì?
+Tra loi: Xử lý CRUD cho nhieu bang: San, KhachHang, NhanVien, DichVu, 
+         HoaDon, Voucher, CTHD, LichSan.
+
+CAU 10: File nào quan trọng nhất của Người 4?
+Tra loi: ExpiryListener.java - CronJob
+         BookingRepository.java (phần expire(), expireSlots())
+
+=== MUC 3: CRONJOB CHI TIẾT ===
+
+CAU 11: Cách CronJob chạy tự động?
+Tra loi:
+1. Tomcat khoi dong
+2. Tim @WebListener
+3. Goi ExpiryListener.contextInitialized()
+4. Tao ScheduledExecutorService
+5. Tinh delay den phut 0 cua gio tiep theo
+6. Len lịch: scheduleAtFixedRate(task, delay, 1, HOURS)
+7. Moi gio, đúng phut 0: chay expire() và expireSlots()
+
+CAU 12: Công thức tính delay ban đầu?
+Tra loi:
+- now = LocalDateTime.now()
+- nextHour = now.plusHours(1).withMinute(0).withSecond(0)
+- delay = Duration.between(now, nextHour).getSeconds()
+
+Ví dụ: Bây giờ 12:50:41 → delay = 559 giây (9 phút 19 giây) → chạy lần đầu vào 13:00:00
+
+CAU 13: expire() làm gì?
+Tra loi:
+1. Tim HoaDon co trang_thai = CHƯA THANH TOÁN
+   va han_thanh_toan < SYSDATETIME()
+2. Cap nhat → ĐÃ HỦY
+3. Giai phong ca san lien quan → CÒN TRỐNG
+
+CAU 14: expireSlots() làm gì?
+Tra loi:
+1. Tim LichSan co trang_thai IN (CÒN TRỐNG, ĐÃ HỦY)
+   va gio_bat_dau <= SYSDATETIME()
+2. Cap nhat → HẾT
+
+CAU 15: Tại sao chỉ chuyển CÒN TRỐNG → HẾT?
+Tra loi:
+- ĐÃ ĐẶT: Nguoi da thanh toan, khong duoc huy
+- ĐANG GIỮ CHỖ: Nguoi dang cho thanh toan, khong duoc huy
+- Chi CÒN TRỐNG hoặc ĐÃ HỦY moi duoc chuyen → HẾT
+
+=== MUC 4: DICH VU ===
+
+CAU 16: Làm sao để them dich vu moi?
+Tra loi:
+1. Dang nhap Admin
+2. /admin/manage?entity=DichVu&action=form
+3. Dien: ma_dv, ten_dv, don_gia
+4. Nhan "Luu"
+5. AdminCrudServlet xu ly INSERT
+
+CAU 17: Làm sao de sua dich vu?
+Tra loi:
+1. /admin/manage?entity=DichVu
+2. Nhan "Sua"
+3. Cap nhat thong tin
+4. Nhan "Luu"
+5. AdminCrudServlet xu ly UPDATE
+
+CAU 18: Làm sao de xoa dich vu?
+Tra loi:
+1. Nhan "Xoa" trong danh sach
+2. Xac nhan
+3. AdminCrudServlet xu ly DELETE
+
+CAU 19: Dich vu co quan trong nhu nao?
+Tra loi: La dich vu di kem khi dat san (nuoc, ao bib, bong...). 
+         Khong bat buoc, nguoi dung tu chon.
+
+CAU 20: Don gia dich vu luu o dau?
+Tra loi: Luu trong bang DichVu. Khi them vao CTHD, luu don_gia tai thoi diem 
+         do (co the thay doi).
+
+=== MUC 5: TEST ===
+
+CAU 21: Test CronJob - expireSlots()?
+Tra loi:
+1. Chon ngay hom nay
+2. Dat san cho ca da qua gio (VD: 07:00 - 08:30, bay gio 09:00)
+3. Chờ CronJob chay (toi da 1 gio)
+4. Kiem tra: ca do co trang_thai = HẾT khong?
+5. Kiem tra DB: SELECT * FROM LichSan WHERE trang_thai = N'HẾT'
+
+CAU 22: Test CronJob - expire()?
+Tra loi:
+1. Tao hoa don, trang_thai = CHƯA THANH TOÁN
+2. Dat han_thanh_toan = 1 gio truoc
+3. Chờ CronJob chay
+4. Kiem tra: hoa don → ĐÃ HỦY
+5. Kiem tra: ca san → CÒN TRỐNG
+
+CAU 23: Test CronJob chay tu dong?
+Tra loi:
+1. Khoi dong Tomcat
+2. Xem console log
+3. Tim dòng: "BookingRepository schema: ..."
+4. Tim dòng: "Lỗi khởi tạo..." (neu có loi)
+5. Đợi den phut 0 cua gio tiep theo
+6. Kiem tra DB xem có ca nao chuyển HẾT khong
+
+CAU 24: Test CRUD Dich vu?
+Tra loi:
+1. /admin/manage?entity=DichVu
+2. Them moi: DV004, "Bong thi dau", 80000
+3. Luu → kiem tra danh sach
+4. Sua → thay doi gia → Luu
+5. Xoa → xac nhan → kiem tra bien mat
+
+CAU 25: Test trang thai EXPIRED?
+Tra loi:
+1. Dat san hom nay
+2. Chon ca da qua gio (VD: 07:00-08:30)
+3. Kiem tra:
+   - Hien thi mau xam (EXPIRED)
+   - Chu trang
+   - Hien thi "HẾT"
+   - Khong the click
+4. Thử truy cập truc tiep URL → Bi tu choi
+
+=== KET THUC PHAN 4 ===

@@ -1,0 +1,15 @@
+<%@ page contentType="text/html; charset=UTF-8" %>
+<!doctype html><html lang="vi"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sân Bóng Hoa Sen</title>
+<link href="${pageContext.request.contextPath}/css/style.css" rel="stylesheet">
+</head><body>
+<div class="navbar">
+<div class="container">
+<a href="${pageContext.request.contextPath}/home" class="brand">SÂN BÓNG HOA SEN</a>
+<div>
+<a href="${pageContext.request.contextPath}/home">Trang chủ</a> | 
+<a href="${pageContext.request.contextPath}/admin/login">Quản trị</a>
+</div>
+</div>
+</div>

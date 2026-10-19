@@ -1,0 +1,173 @@
+PHAN 1 - NGUOI 1: QUAN LY NGUOI DUNG + DANG NHAP
+
+=== MUC 1: CAC CAU HOI CO BAN ===
+
+CAU 1: Du an nay la gi?
+Tra loi: Website quan ly dat san bong "San Bong Hoa Sen". Co chuc nang dat san, thanh toan, quan ly voucher, quan ly nguoi dung.
+
+CAU 2: Cong nghe su dung la gi?
+Tra loi: Java Servlet + JSP + JDBC + SQL Server + Apache Tomcat + MVC. Khong dung Spring Boot.
+
+CAU 3: Tai sao khong dung Spring Boot?
+Tra loi: De bai yeu cau hoc va hieu ro co che Servlet co ban. Muc dich la hoc tap, khong phai production.
+
+CAU 4: Cau truc MVC trong project nay nhu nao?
+Tra loi: 
+- Model: Entities.java (Entity classes)
+- View: JSP files (hien thi giao dien)
+- Controller: Servlets (xử ly request/response)
+
+CAU 5: Co bao nhieu bang trong database?
+Tra loi: 8 bang: San, KhachHang, NhanVien, LichSan, DichVu, HoaDon, CTHD, Voucher.
+
+=== MUC 2: DANG NHAP & SESSION ===
+
+CAU 6: Trinh tu dang nhap Admin nhu nao?
+Tra loi: 
+1. Truy cap /admin/login
+2. AdminLoginServlet kiem tra Session
+3. Nếu chưa đăng nhập → hien thi form login
+4. Nhap SDT + mat khau
+5. Query DB: SELECT * FROM NhanVien WHERE sdt=? AND mat_khau=?
+6. Neu dung → luu vao Session (adminUser, adminId)
+7. Chuyen ve /admin
+
+CAU 7: Session la gi? Hoat dong nhu sao?
+Tra loi: Session la co che luu trang thai giua cac request. 
+- Khi đăng nhập thanh cong, luu thong tin vao Session
+- Moi request sau do co Session ID (qua cookie)
+- Server doc Session ID de biet ai đang đăng nhập
+- Het han sau 30 phut hoặc khi logout
+
+CAU 8: AdminAuthFilter la gi?
+Tra loi: La bo loc (Filter) chay truoc moi request den /admin/*. 
+- Kiem tra Session co adminUser khong
+- Co → cho phep truy cap
+- Khong → chuyen ve /admin/login
+
+CAU 9: Code AdminAuthFilter nhu nao?
+Tra loi:
+@WebFilter(urlPatterns = {"/admin/*"})
+public class AdminAuthFilter implements Filter {
+    public void doFilter(ServletRequest request, ServletResponse response, 
+                         FilterChain chain) 
+            throws IOException, ServletException {
+        HttpServletRequest req = (HttpServletRequest) request;
+        HttpServletResponse resp = (HttpServletResponse) response;
+        
+        HttpSession session = req.getSession(false);
+        if (session == null || session.getAttribute("adminUser") == null) {
+            resp.sendRedirect(req.getContextPath() + "/admin/login");
+            return;
+        }
+        
+        chain.doFilter(request, response);
+    }
+}
+
+CAU 10: AdminLogoutServlet lam gi?
+Tra loi: Huy session va chuyen ve trang login.
+- Lấy session hien tai
+- Goi session.invalidate()
+- Chuyen huong ve /admin/login
+
+=== MUC 3: DATABASE & ENTITY ===
+
+CAU 11: Bảng NhanVien co cac truong nao?
+Tra loi: ma_nv (VARCHAR 10, PK), ten_nv (NVARCHAR 100), sdt (VARCHAR 15, UNIQUE), 
+         chuc_vu (NVARCHAR 50), mat_khau (NVARCHAR 100).
+
+CAU 12: Tại sao dung SDT de dang nhap?
+Tra loi: Nhan vien thuong khong co email. SDT la dinh danh duy nhat va de nho.
+
+CAU 13: Entity NhanVien dinh nghia nhu nao?
+Tra loi: 
+public static class NhanVien {
+    public String maNv, tenNv, sdt, chucVu, matKhau;
+}
+
+CAU 14: Entity KhachHang dinh nghia nhu nao?
+Tra loi:
+public static class KhachHang {
+    public String maKh, hoTen, sdt, email;
+}
+
+CAU 15: Mat khau luu co an toan khong?
+Tra loi: Hien tai luu plain text (khong ma hoa) → khong an toan! 
+         Trong thuc te phai dung BCrypt hoac SHA-256.
+
+=== MUC 4: CRUD OPERATIONS ===
+
+CAU 16: Lam sao de them nhan vien moi?
+Tra loi:
+1. Dang nhap Admin
+2. Truy cap: /admin/manage?entity=NhanVien&action=form
+3. Dien thong tin: ten, SDT, chuc vu, mat khau
+4. Nhan "Luu"
+5. AdminCrudServlet.doPost() xu ly INSERT
+
+CAU 17: Lam sao de sua thong tin khach hang?
+Tra loi:
+1. /admin/manage?entity=KhachHang
+2. Nhan "Sua" → cap nhat thong tin
+3. Nhan "Luu"
+4. AdminCrudServlet thuc hien UPDATE
+
+CAU 18: Lam sao de xoa nhan vien?
+Tra loi:
+1. Truy cap danh sach NhanVien
+2. Nhan nut "Xoa"
+3. Xac nhan trong dialog
+4. AdminCrudServlet thuc hien DELETE hoac UPDATE trang_thai
+
+CAU 19: AdminCrudServlet la gi?
+Tra loi: Servlet tong quat xu ly CRUD cho nhieu bang (San, KhachHang, NhanVien, 
+         DichVu, HoaDon, Voucher, CTHD, LichSan).
+
+CAU 20: Phan quyen hien tại nhu nao?
+Tra loi: Chua co phan quyen chi tiet. Tat ca Admin deu co quyen truy cap toan bo.
+
+=== MUC 5: CAC LOI THUONG GAP ===
+
+CAU 21: Dang nhap that bai?
+Tra loi: Kiem tra:
+1. DB co du lieu mau? SELECT * FROM NhanVien;
+2. Mat khau dung?
+3. Ket noi DB co loi?
+4. Xem log server
+
+CAU 22: Session bi mat?
+Tra loi: - Timeout mac dinh 30 phut
+         - Tang thoi gian: session.setMaxInactiveInterval(3600);
+
+CAU 23: Truy cap /admin bi chuyen ve login?
+Tra loi: Kiem tra:
+1. Session attribute ten dung "adminUser"?
+2. AdminAuthFilter da dang ky?
+3. Cookie co bi xoa?
+
+=== MUC 6: CACH CHAY & TEST ===
+
+CAU 24: Lam sao de chay project?
+Tra loi:
+1. Cai dat SQL Server
+2. Chay file database/football_booking.sql
+3. Cau hinh ket noi DBConnection.java
+4. Deploy len Tomcat
+5. Truy cap: http://localhost:8080/QuanLySanBong/admin/login
+
+CAU 25: Test dang nhap?
+Tra loi: 
+- Truy cap /admin/login → tu dong dang nhap demo
+- Hoac: /admin/login?phone=0900000000&password=admin123
+- Hoac: SĐT: 0365365113, MK: 1
+
+CAU 26: Test CRUD Khach hang?
+Tra loi:
+1. Dang nhap Admin
+2. /admin/manage?entity=KhachHang
+3. Them moi → Luu
+4. Sua → Cap nhat → Luu
+5. Xoa → Xac nhan
+
+=== KET THUC PHAN 1 ===

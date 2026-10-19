@@ -1,0 +1,79 @@
+/* ==================== GLOBAL STYLES ==================== */
+body{font-family:'Segoe UI',Arial,sans-serif;margin:0;padding:0;background:#f5f7fa;color:#333}
+.container{max-width:1200px;margin:0 auto;padding:15px}
+
+/* ==================== NAVBAR ==================== */
+.navbar{background:#1a3d7a;padding:12px 0;border-bottom:3px solid #2a5298;margin-bottom:20px}
+.navbar .container{display:flex;align-items:center;justify-content:space-between}
+.navbar a{color:#fff;text-decoration:none;font-weight:600;font-size:15px}
+.navbar .brand{font-size:20px;font-weight:bold;color:#fff}
+
+/* ==================== BUTTONS ==================== */
+.btn{display:inline-block;padding:8px 16px;margin:4px;text-decoration:none;border:none;border-radius:4px;background:#2a5298;color:#fff;font-size:14px;cursor:pointer;transition:all 0.2s ease}
+.btn:hover{background:#1a3d7a;transform:translateY(-2px);box-shadow:0 2px 8px rgba(42,82,152,0.3)}
+.btn.btn-primary{background:#2a5298;color:#fff}
+.btn.btn-success{background:#4caf50;color:#fff}
+.btn.btn-danger{background:#f44336;color:#fff}
+.btn:disabled{background:#ccc;cursor:not-allowed;transform:none;box-shadow:none}
+
+/* ==================== ALERTS ==================== */
+.alert{padding:12px 15px;border-radius:4px;margin:10px 0;font-size:14px}
+.alert{background:#e3f2fd;border-left:4px solid #2a5298;color:#1a3d7a}
+
+/* ==================== FORMS ==================== */
+label{display:block;font-weight:600;margin:12px 0 6px;color:#1a3d7a}
+input,select,textarea{padding:8px 12px;border:1px solid #ccc;border-radius:4px;font-size:14px;width:100%;box-sizing:border-box}
+input:focus,select:focus,textarea:focus{outline:none;border-color:#2a5298;box-shadow:0 0 0 2px rgba(42,82,152,0.2)}
+
+/* ==================== CARDS ==================== */
+.card{background:#fff;border:1px solid #e0e0e0;border-radius:8px;padding:20px;margin-bottom:20px;box-shadow:0 2px 4px rgba(0,0,0,0.05)}
+
+/* ==================== TABLES ==================== */
+table{width:100%;border-collapse:collapse;margin:15px 0}
+th,td{border:1px solid #ddd;padding:12px;text-align:center;font-size:14px}
+th{background:#2a5298;color:#fff;font-weight:600}
+tbody tr:nth-child(even){background:#f8f9fc}
+tbody tr:hover{background:#e3f2fd}
+
+/* ==================== FOOTER ==================== */
+footer{background:#1a3d7a;padding:15px 0;text-align:center;color:#fff;font-size:13px;margin-top:30px}
+
+/* ==================== STATUS BADGES ==================== */
+.status-hold{background:#ff9800;color:#fff;padding:4px 8px;border-radius:4px;font-size:12px}
+.status-booked{background:#f44336;color:#fff;padding:4px 8px;border-radius:4px;font-size:12px}
+.status-paid{background:#4caf50;color:#fff;padding:4px 8px;border-radius:4px;font-size:12px}
+.status-unpaid{background:#ff9800;color:#fff;padding:4px 8px;border-radius:4px;font-size:12px}
+
+/* ==================== FIELD SELECTION ==================== */
+td.free{background:#fff;cursor:pointer}
+td.free:hover{background:#e3f2fd;transform:scale(1.02);transition:all 0.2s ease;border-color:#2a5298;box-shadow:0 2px 8px rgba(0,0,0,0.1)}
+td.free.selected{background:#2a5298;color:#fff;font-weight:bold;box-shadow:0 0 10px rgba(42,82,152,0.5);transform:scale(1.02);transition:all 0.2s ease}
+td.pending{background:#ffd54f;color:#333}
+td.booked{background:#ef5350;color:#fff}
+td.event{background:#ce93d8;color:#333}
+
+/* ==================== BOOKING PAGE ==================== */
+.booking-layout{display:flex;gap:20px;align-items:flex-start}
+.booking-form-panel{flex:0 0 320px;position:sticky;top:10px}
+.booking-table-panel{flex:1;min-width:0}
+.booking-table table{font-size:13px;border-collapse:collapse;width:100%}
+.booking-table th,.booking-table td{border:1px solid #ccc;padding:8px;text-align:center;vertical-align:top;min-width:90px}
+.booking-table th{background:#f5f5f5;font-weight:bold}
+.services-list{margin:10px 0;padding:10px;border:1px solid #ddd;background:#fafafa}
+.service-item{margin:6px 0;display:flex;align-items:center;gap:8px}
+.service-qty{width:50px;padding:4px;text-align:center;border-radius:4px;border:1px solid #ccc}
+
+/* ==================== FIELD DASHBOARD ==================== */
+.field-layout{display:flex;gap:20px;align-items:flex-start}
+.field-sidebar{flex:0 0 220px}
+.field-list{width:100%}
+.field-item{display:block;padding:12px 15px;margin:5px 0;background:#fff;border:1px solid #ddd;border-radius:6px;text-decoration:none;color:#333;cursor:pointer;transition:all 0.2s}
+.field-item:hover{background:#f0f4f8;border-color:#2a5298;box-shadow:0 2px 6px rgba(42,82,152,0.2)}
+.field-item.active{background:#2a5298;color:#fff;box-shadow:0 2px 8px rgba(42,82,152,0.3)}
+.customer-table{width:100%;border-collapse:collapse}
+.customer-table th,.customer-table td{border:1px solid #ddd;padding:10px;text-align:center}
+.customer-table th{background:#2a5298;color:#fff}
+.customer-table tbody tr:hover{background:#f0f4f8}
+
+/* ==================== ANIMATIONS ==================== */
+@keyframes glow{0%{box-shadow:0 0 0 0 rgba(42,82,152,0.7)}50%{box-shadow:0 0 0 6px rgba(42,82,152,0.3)}100%{box-shadow:0 0 12px rgba(42,82,152,0.5)}}

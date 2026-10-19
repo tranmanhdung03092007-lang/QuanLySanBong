@@ -1,0 +1,153 @@
+PHAN 2 - NGUOI 2: QUAN LY SAN + DAT SAN
+
+=== MUC 1: CAC CAU HOI CO BAN ===
+
+CAU 1: Nguoi 2 phụ trách những gì?
+Tra loi: Quản lý sân, đặt sân, chọn ca, giữ chỗ, hủy đặt, hiển thị lịch sân.
+
+CAU 2: Các trạng thái ca sân là gì?
+Tra loi: 
+- CÒN TRỐNG (AVAILABLE) - có thể đặt
+- ĐANG GIỮ CHỖ (PENDING) - chờ thanh toán cọc
+- ĐÃ ĐẶT (BOOKED) - đã thanh toán
+- HẾT (EXPIRED) - đã qua giờ
+
+CAU 3: Luồng đặt sân như thế nào?
+Tra loi:
+1. Người dùng truy cập /booking
+2. Chọn ngày, chọn ca trống
+3. Click vào ca → gửi POST op=selectSlot
+4. BookingServlet xử lý → gọi Service → Repository
+5. Tạo LichSan với trạng thái ĐANG GIỮ CHỖ
+6. Tạo HoaDon tạm
+7. Hiển thị lại booking.jsp
+
+CAU 4: Làm sao kiểm tra ca trống?
+Tra loi: 
+- Trong BookingRepository.slots() query LEFT JOIN LichSan
+- Đếm số bản ghi có trạng thái != CÒN TRỐNG và != ĐÃ HỦY
+- Nếu đếm = 0 → ca trống
+
+CAU 5: Tại sao ca đã qua giờ không đặt được?
+Tra loi: 
+- Trong slots() kiểm tra: nếu ngày = hôm nay và giờ bắt đầu <= giờ hiện tại
+- Đánh dấu status_code = 3 (EXPIRED)
+- Trong JSP: ca EXPIRED hiển thị màu xám, không cho click
+
+=== MUC 2: DATABASE & CODE ===
+
+CAU 6: Bảng San lưu gì?
+Tra loi: ma_san (PK), ten_san, loai_san, gia_theo_gio, trang_thai.
+
+CAU 7: Bảng LichSan lưu gì?
+Tra loi: ma_lich (PK), ma_san (FK), ngay_dat, buoi, ca, so_ca, gio_bat_dau, 
+         gio_ket_thuc, trang_thai.
+
+CAU 8: BookingServlet xử lý những thao tác nào?
+Tra loi: selectSlot (chọn ca), addService (thêm dịch vụ), removeService (xóa), 
+         applyVoucher (áp dụng voucher), confirm (xác nhận đặt).
+
+CAU 9: BookingService có những phương thức quan trọng gì?
+Tra loi:
+- fields(): lấy danh sách sân
+- slots(): lấy trạng thái ca
+- book(): tạo đơn đặt sân mới
+- toggleSlot(): chọn/bỏ chọn ca
+- applyVoucher(): áp dụng voucher
+- invoice(): lấy chi tiết hóa đơn
+- pay(): thanh toán cọc
+
+CAU 10: File nào quan trọng nhất của Người 2?
+Tra loi: BookingRepository.java - chứa toàn bộ logic đặt sân, kiểm tra ca trống, 
+         tạo hóa đơn, thanh toán.
+
+=== MUC 3: LUỒNG XỬ LÝ ===
+
+CAU 11: Luồng chọn ca sân chi tiết?
+Tra loi:
+1. User click vào ca trống (màu trắng)
+2. Gửi POST /booking?op=selectSlot&fieldId=S01&slot=1&date=2026-07-04
+3. BookingServlet.handleOperation()
+4. Gọi service.ensureInvoice() → tạo/lấy hóa đơn tạm
+5. Gọi service.toggleSlot() → kiểm tra ca trống → tạo LichSan
+6. Cập nhật tổng tiền
+7. Redirect về /booking → hiển thị lại
+
+CAU 12: Luồng áp dụng Voucher?
+Tra loi:
+1. User chọn Voucher từ dropdown
+2. onchange → submit form → POST op=applyVoucher
+3. BookingServlet → BookingService → BookingRepository.applyVoucher()
+4. Kiểm tra voucher hợp lệ
+5. Cập nhật ma_voucher vào HoaDon
+6. Gọi updateTotals() tính lại tiền
+7. Hiển thị lại với thông tin mới
+
+CAU 13: Công thức tính tiền khi có Voucher?
+Tra loi:
+- raw_total = tổng tiền gốc (từ CTHD)
+- discount = raw_total * (giaTri / 100) [PERCENT]
+- hoặc discount = giaTri [MONEY]
+- tong_tien = raw_total - discount
+- tien_coc = tong_tien * 0.3
+- so_tien_con_lai = tong_tien - tien_coc
+
+CAU 14: Luồng thanh toán?
+Tra loi:
+1. User nhấn "Thanh toán"
+2. POST op=pay → BookingRepository.pay()
+3. Kiểm tra trạng thái CHƯA THANH TOÁN và chưa quá hạn
+4. Cập nhật trạng thái → MỚI THANH TOÁN CỌC
+5. Giảm số lượng voucher
+6. Cập nhật ca sân → ĐÃ ĐẶT
+7. Chuyển về /invoice?id=...&paid=1
+
+CAU 15: Luồng hủy đặt sân?
+Tra loi:
+1. User nhấn "Hủy sân"
+2. POST op=cancel → BookingRepository.cancelInvoice()
+3. Cập nhật HoaDon → ĐÃ HỦY
+4. Cập nhật LichSan → CÒN TRỐNG
+5. Redirect về /booking
+
+=== MUC 4: TEST ===
+
+CAU 16: Test xem lịch sân?
+Tra loi:
+1. Truy cập /booking
+2. Kiểm tra hiển thị 4 sân, mỗi sân 9 ca
+3. Ngày mặc định = hôm nay
+4. Các ca đã qua giờ → màu xám (EXPIRED)
+
+CAU 17: Test chọn ca sân?
+Tra loi:
+1. Click ca trống (màu trắng)
+2. Ca chuyển màu xanh (selected)
+3. Hóa đơn tạm tính hiển thị
+4. Click lại → bỏ chọn
+
+CAU 18: Test thêm dịch vụ?
+Tra loi:
+1. Chọn 1 ca sân
+2. Nhấn "Thêm" cho dịch vụ
+3. Dịch vụ xuất hiện trong chi tiết hóa đơn
+4. Tổng tiền tăng
+5. Nhấn X → xóa dịch vụ
+
+CAU 19: Test ca đã qua?
+Tra loi:
+1. Chọn ngày hôm nay
+2. Các ca có giờ bắt đầu <= giờ hiện tại
+3. Phải hiển thị màu xám (EXPIRED)
+4. Không thể click chọn
+
+CAU 20: Test thanh toán?
+Tra loi:
+1. Xác nhận đặt sân → chuyển đến /invoice
+2. Nhấn "Thanh toán cọc"
+3. Kiểm tra trạng thái → MỚI THANH TOÁN CỌC
+4. Ca sân chuyển màu đỏ (ĐÃ ĐẶT)
+5. Nhấn "Thanh toán còn lại"
+6. Kiểm tra trạng thái → ĐÃ THANH TOÁN
+
+=== KET THUC PHAN 2 ===

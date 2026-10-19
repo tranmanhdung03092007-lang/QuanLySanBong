@@ -1,0 +1,36 @@
+<%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
+<%@ include file="/jsp/common/header.jspf" %>
+<div class="container">
+<c:choose>
+<c:when test="${empty invoice}"><div class="alert">Không tìm thấy hóa đơn.</div></c:when>
+<c:otherwise>
+<c:if test="${param.paid=='1'}"><div class="alert">Thanh toán cọc thành công!</div></c:if>
+<div class="card" style="max-width:500px;margin:0 auto;">
+<h2>SÂN BÓNG HOA SEN</h2>
+<p>Hóa đơn: <b>${invoice.ma_hd}</b></p>
+<p><b>Khách:</b> ${invoice.ho_ten} - ${invoice.sdt}</p>
+<p><b>Sân:</b> ${invoice.ten_san} (${invoice.loai_san})</p>
+<p><b>Ngày:</b> ${invoice.ngay_dat} | <b>Buổi:</b> ${invoice.buoi} | <b>Ca:</b> ${invoice.ca}</p>
+<p><b>Giá:</b> <fmt:formatNumber value="${invoice.tong_tien}" type="number"/> VNĐ</p>
+<p><b>Cọc:</b> <fmt:formatNumber value="${invoice.tien_coc}" type="number"/> VNĐ</p>
+<p><b>Còn lại:</b> <fmt:formatNumber value="${invoice.so_tien_con_lai}" type="number"/> VNĐ</p>
+<p><b>Trạng thái:</b> ${invoice.trang_thai}</p>
+<c:if test="${invoice.trang_thai=='CHƯA THANH TOÁN'}">
+<div style="border:1px solid #999;padding:10px;text-align:center;margin:10px 0;">
+<p>Giữ sân — thanh toán cọc trong</p>
+<div id="timer" data-deadline="${invoice.han_thanh_toan}" style="font-size:24px;font-weight:bold;">60:00</div>
+</div>
+<form method="post"><input type="hidden" name="id" value="${invoice.ma_hd}"><input type="hidden" name="op" value="cancel">
+<button class="btn">Thanh toán 200.000 VNĐ</button></form>
+<form method="post" onsubmit="return confirm('Hủy?')" action="${pageContext.request.contextPath}/invoice">
+<input type="hidden" name="id" value="${invoice.ma_hd}"><input type="hidden" name="op" value="cancel">
+<button class="btn">Hủy sân</button></form>
+</c:if>
+<p><a class="btn" href="${pageContext.request.contextPath}/booking">Đặt thêm</a>
+<a class="btn" href="${pageContext.request.contextPath}/home">Trang chủ</a></p>
+</div>
+</c:otherwise>
+</c:choose>
+</div>
+<%@ include file="/jsp/common/footer.jspf" %>

@@ -1,0 +1,4 @@
+<%@ page pageEncoding="UTF-8" %>
+<footer><div class="container">&copy; 2026 Sân Bóng Hoa Sen</div></footer>
+<script src="${pageContext.request.contextPath}/js/app.js"></script>
+</body></html>

@@ -1,0 +1,206 @@
+PHAN 3 - NGUOI 3: VOUCHER + HOA DON + THANH TOAN
+
+=== MUC 1: CAC CAU HOI CO BAN ===
+
+CAU 1: Nguoi 3 phụ trách những gì?
+Tra loi: Quản lý Voucher, Hóa đơn, Thanh toán. Tính tiền giảm, tạo hóa đơn, 
+         xử lý thanh toán cọc và thanh toán đầy đủ.
+
+CAU 2: Các loại Voucher là gì?
+Tra loi: 
+- PERCENT: Giảm theo phần trăm (VD: 10% = giảm 10% tổng tiền)
+- MONEY: Giảm số tiền cố định (VD: giảm 50,000 VNĐ)
+
+CAU 3: Các loại áp dụng Voucher?
+Tra loi:
+- loai = 1: Áp dụng cho Hóa đơn (Booking)
+- loai = 2: Áp dụng cho Sân
+- loai = 3: Áp dụng cho Dịch vụ
+
+CAU 4: Các trạng thái hóa đơn?
+Tra loi:
+- CHƯA THANH TOÁN - Mới tạo
+- MỚI THANH TOÁN CỌC - Đã thanh toán 30%
+- ĐÃ THANH TOÁN - Đã thanh toán đầy đủ
+- ĐÃ HỦY - Đã hủy
+
+CAU 5: Công thức tính tiền khi có Voucher?
+Tra loi:
+- raw_total = tổng tiền gốc (từ CTHD)
+- discount = raw_total * (giaTri / 100) [PERCENT]
+- hoặc discount = giaTri [MONEY]
+- tong_tien = raw_total - discount
+- tien_coc = tong_tien * 0.3
+- so_tien_con_lai = tong_tien - tien_coc
+
+=== MUC 2: DATABASE & CODE ===
+
+CAU 6: Bảng HoaDon lưu gì?
+Tra loi: ma_hd (PK), ma_kh (FK), ma_nv (FK), ngay_lap, tong_tien, tien_coc, 
+         so_tien_con_lai, han_thanh_toan, trang_thai, ma_voucher (FK), tien_giam.
+
+CAU 7: Bảng Voucher lưu gì?
+Tra loi: ma_voucher (PK), ma_code, ten_voucher, loai_giam (PERCENT/MONEY), 
+         gia_tri, don_toi_thieu, ngay_bat_dau, ngay_ket_thuc, so_luong, 
+         trang_thai, loai (1=Hóa đơn, 2=Sân, 3=Dịch vụ).
+
+CAU 8: Bảng CTHD lưu gì?
+Tra loi: ma_cthd (PK, IDENTITY), ma_hd (FK), ma_lich (FK), ma_dv (FK, NULL nếu là sân), 
+         so_luong, don_gia, thanh_tien.
+
+CAU 9: InvoiceServlet xử lý những gì?
+Tra loi: 
+- GET /invoice?id=... → Hiển thị hóa đơn
+- POST op=pay → Thanh toán cọc
+- POST op=payRemaining → Thanh toán còn lại
+- POST op=cancel → Hủy hóa đơn
+- POST op=applyVoucher → Áp dụng voucher
+
+CAU 10: File nào quan trọng nhất của Người 3?
+Tra loi: BookingRepository.java (phần applyVoucher, updateTotals, pay, payRemaining)
+         VoucherRepository.java - Quản lý voucher
+         VoucherService.java - Xử lý nghiệp vụ voucher
+
+=== MUC 3: LUỒNG XỬ LÝ ===
+
+CAU 11: Luồng áp dụng Voucher chi tiết?
+Tra loi:
+1. User chọn Voucher từ dropdown
+2. onchange → submit form → POST op=applyVoucher
+3. InvoiceServlet.doPost() → service.applyVoucher(id, voucherId)
+4. BookingRepository.applyVoucher():
+   - Kiểm tra voucher có null không
+   - Lấy thông tin voucher
+   - Kiểm tra loai = 1 (Hóa đơn)
+   - Cập nhật ma_voucher vào HoaDon
+   - Gọi updateTotals()
+5. updateTotals():
+   - Tính raw_total từ CTHD
+   - Lấy voucherId từ HoaDon
+   - Kiểm tra voucher còn hiệu lực
+   - Tính discount (PERCENT hoặc MONEY)
+   - Cập nhật: tong_tien, tien_coc, so_tien_con_lai, tien_giam
+6. Hiển thị lại hóa đơn
+
+CAU 12: Luồng thanh toán cọc?
+Tra loi:
+1. User nhấn "Thanh toán [tien_coc] VNĐ"
+2. POST op=pay → service.pay(id)
+3. BookingRepository.pay():
+   - Kiểm tra trạng thái CHƯA THANH TOÁN
+   - Kiểm tra chưa quá hạn (han_thanh_toan > SYSDATETIME())
+   - Cập nhật trạng thái → MỚI THANH TOÁN CỌC
+   - Cập nhật so_tien_con_lai = tong_tien - tien_coc
+   - Giảm số lượng voucher
+   - Cập nhật trạng thái các ca → ĐÃ ĐẶT
+4. Chuyển về /invoice?id=...&paid=1
+
+CAU 13: Luồng thanh toán toàn bộ?
+Tra loi:
+1. User nhấn "Thanh toán [so_tien_con_lai] VNĐ"
+2. POST op=payRemaining → service.payRemaining(id)
+3. BookingRepository.payRemaining():
+   - Kiểm tra trạng thái: CHƯA THANH TOÁN, MỚI THANH TOÁN CỌC, hoặc ĐÃ ĐẶT
+   - Cập nhật trạng thái → ĐÃ THANH TOÁN
+   - Cập nhật so_tien_con_lai = 0
+   - Giảm voucher nếu từ CHƯA THANH TOÁN
+4. Hiển thị "Đã thanh toán đầy đủ"
+
+CAU 14: Luồng hủy hóa đơn?
+Tra loi:
+1. User nhấn "Hủy sân"
+2. POST op=cancel → service.cancelInvoice(id)
+3. BookingRepository.cancelInvoice():
+   - Cập nhật HoaDon → ĐÃ HỦY
+   - Giải phóng các ca sân → CÒN TRỐNG
+4. Redirect về /booking
+
+CAU 15: Cách updateTotals() hoạt động?
+Tra loi:
+1. Tính raw_total = SUM(thanh_tien) từ CTHD
+2. Lấy voucherId từ HoaDon
+3. Nếu có voucher:
+   - Kiểm tra voucher còn hiệu lực
+   - Tính discount theo PERCENT hoặc MONEY
+   - Cập nhật: tong_tien, tien_coc, so_tien_con_lai, tien_giam
+4. Nếu không có voucher:
+   - tong_tien = raw_total
+   - tien_coc = tong_tien * 0.3
+   - so_tien_con_lai = tong_tien - tien_coc
+
+=== MUC 4: VOUCHER VALIDATION ===
+
+CAU 16: Điều kiện voucher hợp lệ?
+Tra loi:
+- loai = 1 (Hóa đơn)
+- trang_thai = HOẠT ĐỘNG
+- ngay_bat_dau <= today
+- ngay_ket_thuc >= today
+- so_luong > 0
+- don_toi_thieu <= tổng tiền
+
+CAU 17: Tại sao phải tính từ raw_total?
+Tra loi: Vì voucher phải được tính trên tổng tiền gốc, không phải tổng tiền 
+         đã giảm. Tránh việc giảm nhiều lần.
+
+CAU 18: Khi nào voucher bị xóa khỏi hóa đơn?
+Tra loi:
+- User chọn "-- Chọn Voucher --" (voucherId = null)
+- Voucher hết hạn
+- Voucher không còn hiệu lực
+
+CAU 19: Ai giảm số lượng voucher?
+Tra loi: BookingRepository.useVoucher() được gọi khi:
+- pay(): thanh toán cọc (từ CHƯA THANH TOÁN → MỚI THANH TOÁN CỌC)
+- payRemaining(): thanh toán toàn bộ (từ CHƯA THANH TOÁN → ĐÃ THANH TOÁN)
+
+CAU 20: Có thể áp dụng nhiều voucher không?
+Tra loi: KHÔNG. Mỗi hóa đơn chỉ áp dụng 1 voucher. Khi chọn voucher mới, 
+         voucher cũ bị thay thế.
+
+=== MUC 5: TEST ===
+
+CAU 21: Test tạo Voucher?
+Tra loi:
+1. /admin/manage?entity=Voucher&action=form
+2. Điền thông tin: mã, code, tên, loại giảm, giá trị, đơn tối thiểu, ngày, số lượng
+3. Lưu và kiểm tra
+
+CAU 22: Test áp dụng Voucher PERCENT?
+Tra loi:
+1. Đặt sân: 1 ca S01 = 1,200,000 VNĐ
+2. Chọn Voucher giảm 10%
+3. Kiểm tra:
+   - Tiền trước giảm: 1,200,000
+   - Giảm: 120,000 (10%)
+   - Tổng cộng: 1,080,000
+   - Tiền cọc: 324,000 (30%)
+   - Còn lại: 756,000
+
+CAU 23: Test áp dụng Voucher MONEY?
+Tra loi:
+1. Tạo Voucher giảm 50,000 VNĐ, đơn tối thiểu 500,000
+2. Đặt sân: 600,000 VNĐ
+3. Áp dụng voucher
+4. Kiểm tra:
+   - Tiền trước giảm: 600,000
+   - Giảm: 50,000
+   - Tổng cộng: 550,000
+
+CAU 24: Test thanh toán?
+Tra loi:
+1. Tạo hóa đơn có voucher
+2. Nhấn "Thanh toán cọc"
+3. Kiểm tra trạng thái → MỚI THANH TOÁN CỌC
+4. Ca sân → ĐÃ ĐẶT
+5. Số lượng voucher giảm 1
+6. Nhấn "Thanh toán còn lại"
+7. Kiểm tra trạng thái → ĐÃ THANH TOÁN
+
+CAU 25: Test voucher hết hạn?
+Tra loi:
+1. Tạo voucher có ngày kết thúc = hôm qua
+2. Đặt sân
+3. Kiểm tra voucher không xuất hiện trong dropdown
+
+=== KET THUC PHAN 3 ===
